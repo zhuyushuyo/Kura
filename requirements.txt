@@ -1,0 +1,9 @@
+# Kura 3 dependencies.  The launchers install these into a private
+# environment on this computer (not into the app folder).
+PyQt6>=6.7
+PyQt6-WebEngine>=6.7
+qtawesome>=1.3
+# yt-dlp with its default extras (includes yt-dlp-ejs for YouTube's JS challenges)
+yt-dlp[default]>=2026.10.26
+# Deno: the JavaScript runtime yt-dlp uses for YouTube (official PyPI build)
+deno>=2.5
