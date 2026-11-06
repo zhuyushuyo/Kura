@@ -131,11 +131,12 @@ class Settings:
         configured = self.get("save_dir")
         usable = paths.usable_dir(configured) if configured else None
         if usable:
-            return usable
+            return paths.native_path(usable)
         return str(paths.default_save_dir())
 
     def remember_save_dir(self, path: str) -> None:
-        recent = [p for p in self.get("recent_save_dirs", []) if p != path]
+        path = paths.native_path(path)
+        recent = [p for p in self.get("recent_save_dirs", []) if paths.native_path(p) != path]
         recent.insert(0, path)
         self._data["recent_save_dirs"] = recent[:8]
         self._data["save_dir"] = path

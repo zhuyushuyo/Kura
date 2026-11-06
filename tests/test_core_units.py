@@ -203,3 +203,27 @@ def test_import_v2_settings(kura_home, tmp_path):
     s2 = Settings(kura_home / "config.json")
     assert s2.get("default_preset") == "audio_mp3" and s2.get("theme") == "dark"
     assert s2.save_dir() == str(target)
+
+
+# -- opening folders (Windows Explorer) ----------------------------------------------
+
+def test_windows_select_command_quotes_only_the_path_and_fixes_separators():
+    from kura import paths
+
+    cmd = paths.windows_select_command("G:/マイドライブ/Videos/Kura\\2026-11-05_授業 研究_[abc].mp4")
+    # one string, "/select," unquoted, the path quoted, backslashes only
+    assert cmd == 'explorer /select,"G:\\マイドライブ\\Videos\\Kura\\2026-11-05_授業 研究_[abc].mp4"'
+
+
+def test_saved_folder_is_normalised(kura_home, tmp_path):
+    import os
+
+    from kura.config import Settings
+
+    target = tmp_path / "videos"
+    target.mkdir()
+    s = Settings(kura_home / "config.json")
+    s.remember_save_dir(str(target) + "/./")
+    assert s.save_dir() == os.path.normpath(str(target))
+    s.remember_save_dir(str(target))
+    assert s.get("recent_save_dirs") == [os.path.normpath(str(target))]

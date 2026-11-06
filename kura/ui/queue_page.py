@@ -173,6 +173,8 @@ class TaskRow(QFrame):
         self.b_pause.setVisible(t.status in ("running", "pending", "paused"))
         self.b_retry.setVisible(t.status in ("error", "canceled"))
         self.b_open.setVisible(t.status == "done")
+        done_files = (t.result or {}).get("files") or []
+        self.b_open.setToolTip(tr("queue.open_folder") + ("\n" + done_files[0] if done_files else ""))
         self.b_cancel.setToolTip(tr("queue.cancel") if t.status in ("running", "pending", "paused") else tr("queue.remove"))
         THEME.bind_icon(self.b_cancel, "ph.x" if t.status in ("running", "pending", "paused") else "ph.trash")
         if t.thumb_path and self._thumb_shown != t.thumb_path:

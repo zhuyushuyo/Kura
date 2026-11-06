@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import time
 
 from PyQt6.QtCore import QByteArray, QSize, Qt, QTimer
@@ -32,7 +33,7 @@ from .queue_page import QueuePage
 from .settings_page import SettingsPage
 from .theme import THEME, app_icon, human_size
 from .web import create_profile
-from .widgets import NavButton, ToastHost
+from .widgets import NavButton, ToastHost, shorten
 
 tr = i18n.tr
 
@@ -400,11 +401,14 @@ class MainWindow(QMainWindow):
         t = self.queue.tasks.get(task_id)
         if not t:
             return
-        title = t.title or t.url
+        title = shorten(t.title or t.url, 80)
         if ok:
             files = (t.result or {}).get("files") or []
-            self.ctx.notify(tr("queue.finished_toast", title=title), "success", tr("queue.open_folder"),
-                            (lambda f=files[0]: paths.reveal_in_file_manager(f)) if files else None)
+            text = tr("queue.finished_toast", title=title)
+            if files:
+                text += "\n" + tr("queue.saved_to", dir=shorten(os.path.dirname(files[0]), 70))
+            self.ctx.notify(text, "success", tr("queue.open_folder"),
+                            (lambda f=files[0]: paths.reveal_in_file_manager(f)) if files else None, 8000)
             if self.ctx.settings.get("notifications"):
                 if self.tray and not self.isActiveWindow():
                     self.tray.showMessage(tr("queue.notify_done_title"), title, app_icon(), 5000)

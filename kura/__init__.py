@@ -6,7 +6,7 @@ them in a searchable library.
 """
 
 __app_name__ = "Kura"
-__version__ = "3.0.0"
+__version__ = "3.0.1"
 __release_date__ = "2026-11-06"
 __author__ = "Yu ZHU"
-__repo__ = "https://github.com/zhuyushuyo/Kura"
+__repo__ = "https://github.com/zhuyushuyo/kura"

@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.0.1 — 2026-11-06
+
+### Fixed
+- Windows: "Show in folder" opened *Documents* instead of the download's folder. Explorer is now called with a
+  correctly quoted `/select,"…"` command and normalised `\` separators (paths chosen in Qt dialogs use `/`).
+- The completion notification no longer runs under the "Show in folder" button with long titles: notifications
+  have a fixed width, wrap their text and put the button below it. They also show the folder the file was saved to.
+- Save folders are stored with the OS's own separators; text from web pages is always shown as plain text.
+
 ## 3.0.0 — 2026-11-06
 
 Renamed from *YouTube Downloader Professional* to **Kura（蔵）** and rebuilt.

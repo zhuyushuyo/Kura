@@ -1,6 +1,6 @@
 [project]
 name = "kura"
-version = "3.0.0"
+version = "3.0.1"
 description = "Kura (蔵) – personal video archiving tool built on yt-dlp and PyQt6"
 readme = "README.md"
 license = "Apache-2.0"
@@ -15,7 +15,7 @@ dependencies = [
 ]
 
 [project.urls]
-Repository = "https://github.com/zhuyushuyo/Kura"
+Repository = "https://github.com/zhuyushuyo/kura"
 
 [project.scripts]
 kura-cli = "kura.core.cli:main"
