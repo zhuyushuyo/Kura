@@ -23,6 +23,7 @@ from .theme import THEME
 
 def label(text: str = "", obj: str | None = None, wrap: bool = False, selectable: bool = False) -> QLabel:
     lb = QLabel(text)
+    lb.setTextFormat(Qt.TextFormat.PlainText)  # titles from the web must never be read as HTML
     if obj:
         lb.setObjectName(obj)
     lb.setWordWrap(wrap)
@@ -86,6 +87,7 @@ class ElidedLabel(QLabel):
         super().__init__()
         self._full = text
         self._mode = mode
+        self.setTextFormat(Qt.TextFormat.PlainText)
         self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
         self.setText(text)
 
@@ -202,7 +204,22 @@ class CollapsibleSection(QWidget):
         self.header.setChecked(on)
 
 
+TOAST_WIDTH = 400
+
+
+def shorten(text: str, limit: int = 90) -> str:
+    """Cut overly long one-line text (titles, paths) for compact messages."""
+    text = text or ""
+    if len(text) <= limit:
+        return text
+    head = int(limit * 0.45)
+    return text[:head] + "…" + text[-(limit - head - 1):]
+
+
 class Toast(QFrame):
+    """Fixed-width notification: text wraps, the action button sits below it
+    (so long titles can never run under the button)."""
+
     closed = pyqtSignal()
 
     def __init__(self, parent: QWidget, text: str, kind: str = "info", action: str | None = None,
@@ -210,24 +227,35 @@ class Toast(QFrame):
         super().__init__(parent)
         self.setObjectName("Toast")
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        lay = QHBoxLayout(self)
-        lay.setContentsMargins(14, 10, 8, 10)
-        lay.setSpacing(10)
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(14, 10, 8, 10)
+        outer.setSpacing(6)
+        top = QHBoxLayout()
+        top.setSpacing(10)
         icon_name = {"info": "ph.info", "success": "ph.check-circle", "warning": "ph.warning",
                      "error": "ph.x-circle"}.get(kind, "ph.info")
         ico = QLabel()
+        ico.setFixedSize(18, 18)
         role = {"success": "success", "warning": "warning", "error": "danger"}.get(kind, "toast_text")
         ico.setPixmap(THEME.icon(icon_name, role).pixmap(QSize(18, 18)))
-        lay.addWidget(ico, 0, Qt.AlignmentFlag.AlignTop)
-        lb = QLabel(text)
-        lb.setWordWrap(True)
-        lb.ensurePolished()
-        fm = lb.fontMetrics()
-        natural = max((fm.horizontalAdvance(line) for line in text.split("\n")), default=0) + 16
-        lb.setMinimumWidth(min(natural, 330))
-        lb.setMaximumWidth(360)
-        lay.addWidget(lb, 1)
+        top.addWidget(ico, 0, Qt.AlignmentFlag.AlignTop)
+        lines = [shorten(line, 160) for line in (text or "").split("\n")]
+        self.label = QLabel("\n".join(lines))
+        self.label.setTextFormat(Qt.TextFormat.PlainText)
+        self.label.setWordWrap(True)
+        self.label.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        top.addWidget(self.label, 1)
+        x = QToolButton()
+        x.setIcon(THEME.icon("ph.x", "toast_text"))
+        x.setIconSize(QSize(12, 12))
+        x.clicked.connect(self.dismiss)
+        top.addWidget(x, 0, Qt.AlignmentFlag.AlignTop)
+        outer.addLayout(top)
+        self.button: QPushButton | None = None
         if action and callback:
+            row = QHBoxLayout()
+            row.setContentsMargins(28, 0, 6, 0)
+            row.addStretch(1)
             b = QPushButton(action.replace("&", "&&"))
             b.setCursor(Qt.CursorShape.PointingHandCursor)
 
@@ -236,12 +264,9 @@ class Toast(QFrame):
                 self.dismiss()
 
             b.clicked.connect(run)
-            lay.addWidget(b, 0, Qt.AlignmentFlag.AlignVCenter)
-        x = QToolButton()
-        x.setIcon(THEME.icon("ph.x", "toast_text"))
-        x.setIconSize(QSize(12, 12))
-        x.clicked.connect(self.dismiss)
-        lay.addWidget(x, 0, Qt.AlignmentFlag.AlignTop)
+            row.addWidget(b)
+            outer.addLayout(row)
+            self.button = b
         self._effect = QGraphicsOpacityEffect(self)
         self._effect.setOpacity(1.0)
         self.setGraphicsEffect(self._effect)
@@ -281,7 +306,6 @@ class ToastHost:
         self.toasts.append(t)
         if len(self.toasts) > 4:
             self.toasts[0].dismiss()
-        t.adjustSize()
         t.show()
         t.raise_()
         self.relayout()
@@ -293,11 +317,13 @@ class ToastHost:
 
     def relayout(self) -> None:
         y = self.host.height() - 16
+        w = max(220, min(TOAST_WIDTH, self.host.width() - 32))
         for t in reversed(self.toasts):
-            t.adjustSize()
-            w = min(t.sizeHint().width(), 460)
+            t.setFixedWidth(w)
+            t.layout().activate()
             h = t.heightForWidth(w) if t.hasHeightForWidth() else t.sizeHint().height()
-            t.resize(w, h)
+            h = max(h, t.minimumSizeHint().height())
+            t.setFixedHeight(h)
             y -= h
             t.move(self.host.width() - w - 16, y)
             y -= 8

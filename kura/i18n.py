@@ -257,6 +257,7 @@ STRINGS: dict[str, tuple[str, str]] = {
                         "Downloads are running. Pause them and quit? (They can be resumed next time.)"),
     "queue.restored": ("前回のキュー {n} 件を一時停止状態で復元しました", "Restored {n} queued items (paused)"),
     "queue.finished_toast": ("完了: {title}", "Finished: {title}"),
+    "queue.saved_to": ("保存先: {dir}", "Saved to: {dir}"),
     "queue.failed_toast": ("失敗: {title}", "Failed: {title}"),
     "queue.notify_done_title": ("ダウンロード完了", "Download finished"),
     "queue.untitled": ("（タイトル取得中）", "(fetching title)"),

@@ -105,7 +105,7 @@ class QueueManager(QObject):
         lit = {"dl_date": _dt.date.today().isoformat(), "preset": preset.tag or preset.id}
         lit.update(literals or {})
         return JobSpec(
-            url=url, preset=preset.to_dict(), dest_dir=dest_dir or s.save_dir(),
+            url=url, preset=preset.to_dict(), dest_dir=paths.native_path(dest_dir or s.save_dir()),
             work_dir=str(paths.WORK_DIR / task_id), name_template=s.get("filename_template"),
             literals=lit, subtitles=subtitles.to_dict() if subtitles else None, clip=clip,
             format_override=format_override, container_override=container_override,

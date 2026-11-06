@@ -74,9 +74,33 @@ def _popen_detached(args: list[str]) -> None:
     subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **kwargs)
 
 
+def native_path(path: str | os.PathLike) -> str:
+    """Clean path with this OS's separators.
+
+    Qt's file dialogs return ``C:/Users/...`` on Windows; joined with
+    ``os.path.join`` that becomes ``C:/Users/...\\file.mp4``, which Explorer
+    does not understand.
+    """
+    return os.path.normpath(str(path)) if str(path) else ""
+
+
+def windows_select_command(path: str) -> str:
+    """Explorer command line that opens a folder with ``path`` selected.
+
+    It must be passed to ``Popen`` as ONE string: with an argument list
+    Python quotes the whole ``/select,…`` argument when the path contains a
+    space, Explorer cannot parse that and opens "Documents" instead.
+    """
+    import ntpath
+
+    return f'explorer /select,"{ntpath.normpath(path)}"'
+
+
 def open_path(path: str | os.PathLike) -> None:
     """Open a file or folder with the default application."""
-    p = str(path)
+    p = native_path(path)
+    if not p:
+        return
     if IS_WINDOWS:
         os.startfile(p)  # type: ignore[attr-defined]  # noqa: S606
     elif IS_MAC:
@@ -87,19 +111,22 @@ def open_path(path: str | os.PathLike) -> None:
 
 def reveal_in_file_manager(path: str | os.PathLike) -> None:
     """Show a file selected in Explorer / Finder (falls back to its folder)."""
-    p = Path(path)
-    if not p.exists():
-        p = p.parent
-        if not p.exists():
-            return
-        open_path(p)
+    p = native_path(path)
+    if not p:
         return
-    if IS_WINDOWS:
-        _popen_detached(["explorer", f"/select,{p}"])
+    if not os.path.exists(p):
+        parent = os.path.dirname(p)
+        if parent and os.path.isdir(parent):
+            open_path(parent)
+        return
+    if os.path.isdir(p):
+        open_path(p)
+    elif IS_WINDOWS:
+        subprocess.Popen(windows_select_command(p))  # noqa: S602,S603 - see windows_select_command
     elif IS_MAC:
-        _popen_detached(["open", "-R", str(p)])
+        _popen_detached(["open", "-R", p])
     else:
-        open_path(p if p.is_dir() else p.parent)
+        open_path(os.path.dirname(p))
 
 
 # --------------------------------------------------------------------------
